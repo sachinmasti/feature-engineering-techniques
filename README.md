@@ -16,6 +16,7 @@ This repository contains hands-on notebooks covering various feature engineering
 | `Date_time_data_handing.ipynb` | Extracting and engineering features from DateTime columns using `pd.to_datetime`, `.dt` accessor, cyclical encoding, and time-based derived features |
 | `Missing_Data_Mechanisms_MCAR_MAR_MNAR_v2.ipynb` | Understanding and simulating missing data mechanisms — MCAR, MAR, and MNAR — with practical examples using NumPy and Pandas |
 | `Feature_Engineering_Stats_Guide_Commented.ipynb` | Statistical testing for feature selection — ANOVA (F-test) and Eta Squared (effect size) to evaluate the impact of categorical variables on numeric features |
+| `Handling_Missing_Numerical_Data_GOLD_VERSION.ipynb` | Numerical missing value imputation strategies — Mean, Median, Arbitrary Value, End of Distribution, and Random Sample Imputation — with model performance comparison using Linear Regression and R² Score |
 
 ---
 
@@ -34,13 +35,14 @@ This repository contains hands-on notebooks covering various feature engineering
 - **Missing Data Mechanisms (MCAR, MAR, MNAR)** — Simulating and identifying different types of missingness; understanding when MAR assumption holds for imputation in ML workflows
 - **ANOVA (One-Way F-Test)** — Statistical test to check whether a categorical variable has a significant effect on a numeric variable across multiple groups
 - **Eta Squared (Effect Size)** — Measures how strongly a categorical variable explains variance in a numeric variable; used alongside ANOVA for complete feature evaluation
+- **Numerical Missing Value Imputation** — Five imputation strategies for numerical data with train/test split to avoid data leakage, and R² Score-based model performance comparison across all methods
 
 ---
 
 ### 🔜 Coming Soon
 
 - Label Encoding & One Hot Encoding
-- ~~Handling Missing Values (NaN)~~ *(Missing data mechanisms covered — imputation strategies coming soon)*
+- ~~Handling Missing Values (NaN)~~ *(Mean, Median, Arbitrary, End of Distribution & Random Sample imputation covered)*
 - Outlier Detection & Treatment
 - Binning & Bucketing
 - Feature Scaling (MinMaxScaler, StandardScaler)
@@ -68,6 +70,20 @@ When working with **categorical → numeric** relationships, two tests are commo
 | > 0.14 | Large effect |
 
 > ⚠️ In real ML workflows, use ANOVA and Eta Squared for **feature understanding**, not as a replacement for feature importance, mutual information, or model-based selection.
+
+---
+
+## 🔢 Numerical Imputation – When To Use Which Method?
+
+| Method | Use When | Avoid When |
+|---|---|---|
+| **Mean Imputation** | Data is normally distributed, few outliers, using linear models | Data is skewed or has strong outliers |
+| **Median Imputation** | Data is skewed or has outliers | — |
+| **Arbitrary Value (-999 etc.)** | Using tree-based models (Random Forest, XGBoost), missing as signal | Linear regression (causes distortion) |
+| **End of Distribution (Mean + 3×Std)** | Missing values are informative, treat missing as extreme | — |
+| **Random Sample Imputation** | Need to preserve original distribution and statistical properties | Dataset is very small |
+
+> ✅ Always fit imputation on **training data only** and apply to test data — avoids data leakage.
 
 ---
 
@@ -127,6 +143,15 @@ female_age = df[df['Gender'] == 'Female']['Age']
 other_age  = df[df['Gender'] == 'Other']['Age']
 
 f_oneway(male_age, female_age, other_age)  # ANOVA
+```
+
+**Numerical Imputation Notebook:**
+```python
+data = {
+    "age": [25, 30, 35, np.nan, 45, 50, np.nan, 60, 65, 70],
+    "salary": [30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000]
+}
+df = pd.DataFrame(data)
 ```
 
 ---
