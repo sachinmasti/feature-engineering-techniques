@@ -1,9 +1,11 @@
 # 🛠️ Feature Engineering Techniques
+
 A collection of feature engineering techniques documented with practical examples using Python and Pandas.
 
 ---
 
 ## 📌 About
+
 This repository contains hands-on notebooks covering various feature engineering techniques used in data preprocessing and machine learning pipelines. The goal is to document useful techniques for future reference and learning.
 
 ---
@@ -18,6 +20,7 @@ This repository contains hands-on notebooks covering various feature engineering
 | `Feature_Engineering_Stats_Guide_Commented.ipynb` | Statistical testing for feature selection — ANOVA (F-test) and Eta Squared (effect size) to evaluate the impact of categorical variables on numeric features |
 | `Handling_Missing_Numerical_Data_GOLD_VERSION.ipynb` | Numerical missing value imputation strategies — Mean, Median, Arbitrary Value, End of Distribution, and Random Sample Imputation — with model performance comparison using Linear Regression and R² Score |
 | `Categorical_Missing_Value_Handling.ipynb` | Categorical missing value imputation strategies — Most Frequent, Constant ('Missing' category), Random Imputation, and Missing Indicator — with concept explanation, use cases, and risks for each method |
+| `KNN_Iterative_Imputer_Guide.ipynb` | Advanced missing value imputation using KNN Imputer (distance-based) and Iterative Imputer (model-based / MICE) — covers when to use each, industry best practices, data leakage prevention, and Pipeline integration |
 
 ---
 
@@ -38,13 +41,15 @@ This repository contains hands-on notebooks covering various feature engineering
 - **Eta Squared (Effect Size)** — Measures how strongly a categorical variable explains variance in a numeric variable; used alongside ANOVA for complete feature evaluation
 - **Numerical Missing Value Imputation** — Five imputation strategies for numerical data with train/test split to avoid data leakage, and R² Score-based model performance comparison across all methods
 - **Categorical Missing Value Imputation** — Four strategies for categorical data: Most Frequent, Constant/Missing category, Random Imputation, and Missing Indicator; includes when-to-use, risks, and production-level best practices
+- **KNN Imputer** — Distance-based imputation using K-nearest neighbors; fills missing values based on the most similar rows using Euclidean distance; includes scaling requirements and n_neighbors tuning
+- **Iterative Imputer (MICE)** — Model-based imputation using chained equations; treats each column with missing values as a regression target and predicts it using remaining features; supports custom estimators and multiple iterations for convergence
 
 ---
 
 ### 🔜 Coming Soon
 
 - Label Encoding & One Hot Encoding
-- ~~Handling Missing Values (NaN)~~ *(Numerical & Categorical imputation strategies fully covered)*
+- ~~Handling Missing Values (NaN)~~ *(Numerical, Categorical, KNN & Iterative imputation strategies fully covered)*
 - Outlier Detection & Treatment
 - Binning & Bucketing
 - Feature Scaling (MinMaxScaler, StandardScaler)
@@ -84,6 +89,8 @@ When working with **categorical → numeric** relationships, two tests are commo
 | **Arbitrary Value (-999 etc.)** | Using tree-based models (Random Forest, XGBoost), missing as signal | Linear regression (causes distortion) |
 | **End of Distribution (Mean + 3×Std)** | Missing values are informative, treat missing as extreme | — |
 | **Random Sample Imputation** | Need to preserve original distribution and statistical properties | Dataset is very small |
+| **KNN Imputer** | Features are correlated, pattern-based fill needed, missing % is low | Very large datasets (computationally slow), unscaled data |
+| **Iterative Imputer (MICE)** | Features are strongly correlated, MAR-type missingness, complex relationships | Small datasets, computation-constrained environments |
 
 > ✅ Always fit imputation on **training data only** and apply to test data — avoids data leakage.
 
@@ -99,6 +106,21 @@ When working with **categorical → numeric** relationships, two tests are commo
 | **Missing Indicator** | Missing itself is a useful signal | Use together with another imputation method |
 
 > ✅ If 40%+ values are missing: check business importance, check correlation with target, and evaluate with cross-validation before deciding to drop or impute.
+
+---
+
+## ⚔️ KNN Imputer vs Iterative Imputer
+
+| Feature | KNN Imputer | Iterative Imputer |
+|---|---|---|
+| **Logic** | Distance-based (Euclidean) | Model-based (BayesianRidge by default) |
+| **Accuracy** | Medium | High |
+| **Speed** | Slow on large data | Medium |
+| **Relationship Capture** | Weak (local neighbors only) | Strong (global patterns via regression) |
+| **Scaling Required** | ✅ Yes | Recommended |
+| **Custom Estimator** | ❌ No | ✅ Yes (any sklearn regressor) |
+| **Complexity** | Medium | High |
+| **Best For** | Correlated numeric features, low missing % | MAR missingness, complex feature interactions |
 
 ---
 
@@ -176,6 +198,26 @@ data = {
     'Loan_Status': ['Approved', 'Rejected', np.nan, 'Approved', 'Rejected', np.nan, 'Approved']
 }
 df = pd.DataFrame(data)
+```
+
+**KNN & Iterative Imputer Notebook:**
+```python
+data = {
+    'age': [25, 30, np.nan, 28],
+    'salary': [20000, 25000, 24000, 23000]
+}
+df = pd.DataFrame(data)
+
+# KNN Imputer
+from sklearn.impute import KNNImputer
+imputer = KNNImputer(n_neighbors=2)
+df_imputed = imputer.fit_transform(df)
+
+# Iterative Imputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+imputer_iter = IterativeImputer(max_iter=10, random_state=42)
+df_iter_imputed = imputer_iter.fit_transform(df)
 ```
 
 ---
