@@ -21,6 +21,7 @@ This repository contains hands-on notebooks covering various feature engineering
 | `Handling_Missing_Numerical_Data_GOLD_VERSION.ipynb` | Numerical missing value imputation strategies — Mean, Median, Arbitrary Value, End of Distribution, and Random Sample Imputation — with model performance comparison using Linear Regression and R² Score |
 | `Categorical_Missing_Value_Handling.ipynb` | Categorical missing value imputation strategies — Most Frequent, Constant ('Missing' category), Random Imputation, and Missing Indicator — with concept explanation, use cases, and risks for each method |
 | `KNN_Iterative_Imputer_Guide.ipynb` | Advanced missing value imputation using KNN Imputer (distance-based) and Iterative Imputer (model-based / MICE) — covers when to use each, industry best practices, data leakage prevention, and Pipeline integration |
+| `Outlier_Handling_Master_Notebook.ipynb` | Complete outlier detection and treatment guide — IQR Method, Z-Score Method, Capping/Winsorization, Log Transformation, Robust Scaling, and model-based comparison (Linear Regression vs Random Forest) |
 
 ---
 
@@ -43,6 +44,7 @@ This repository contains hands-on notebooks covering various feature engineering
 - **Categorical Missing Value Imputation** — Four strategies for categorical data: Most Frequent, Constant/Missing category, Random Imputation, and Missing Indicator; includes when-to-use, risks, and production-level best practices
 - **KNN Imputer** — Distance-based imputation using K-nearest neighbors; fills missing values based on the most similar rows using Euclidean distance; includes scaling requirements and n_neighbors tuning
 - **Iterative Imputer (MICE)** — Model-based imputation using chained equations; treats each column with missing values as a regression target and predicts it using remaining features; supports custom estimators and multiple iterations for convergence
+- **Outlier Detection & Treatment** — End-to-end outlier handling pipeline covering IQR Method, Z-Score Method, Capping/Winsorization, Log Transformation, RobustScaler, and model-level robustness comparison between Linear Regression and Random Forest
 
 ---
 
@@ -50,7 +52,7 @@ This repository contains hands-on notebooks covering various feature engineering
 
 - Label Encoding & One Hot Encoding
 - ~~Handling Missing Values (NaN)~~ *(Numerical, Categorical, KNN & Iterative imputation strategies fully covered)*
-- Outlier Detection & Treatment
+- ~~Outlier Detection & Treatment~~ *(Fully covered in Outlier_Handling_Master_Notebook.ipynb)*
 - Binning & Bucketing
 - Feature Scaling (MinMaxScaler, StandardScaler)
 - Creating New Features from Existing Ones
@@ -124,6 +126,29 @@ When working with **categorical → numeric** relationships, two tests are commo
 
 ---
 
+## 🚨 Outlier Detection – Quick Reference
+
+| Method | Best For | Threshold |
+|---|---|---|
+| **IQR Method** | Skewed / non-normal data | < Q1 - 1.5×IQR or > Q3 + 1.5×IQR |
+| **Z-Score** | Normally distributed data | \|Z\| > 3 |
+| **Isolation Forest** | High-dimensional, complex patterns | contamination parameter |
+| **Local Outlier Factor** | Density-based detection | n_neighbors tuning |
+
+## 🛠️ Outlier Treatment Strategies
+
+| Strategy | Use When | Algorithm Compatibility |
+|---|---|---|
+| **Remove** | Clear data entry errors | Any |
+| **Capping / Winsorization** | Valid extreme values, data loss not acceptable | Any |
+| **Log Transformation** | Right-skewed data | Linear models benefit most |
+| **RobustScaler** | Scaling step in pipeline | Distance/weight-based models |
+| **Use Robust Model** | Outliers are genuine and informative | Tree-based: RF, XGBoost |
+
+> ⚠️ Never remove outliers during EDA — always observe and document first. Treat outliers only during the preprocessing phase.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -163,61 +188,30 @@ data = {
 }
 ```
 
-**Missing Data Mechanisms Notebook:**
+**Outlier Handling Notebook:**
 ```python
-df = pd.DataFrame({
-    "age": np.random.randint(20, 60, 100),
-    "gender": np.random.choice(["Male", "Female"], 100),
-    "salary": np.random.randint(20000, 100000, 100)
-})
-```
+import numpy as np
+import pandas as pd
 
-**Statistical Testing Notebook:**
-```python
-# Example: Check if Gender affects Age
-male_age   = df[df['Gender'] == 'Male']['Age']
-female_age = df[df['Gender'] == 'Female']['Age']
-other_age  = df[df['Gender'] == 'Other']['Age']
+np.random.seed(42)
+data = np.random.normal(50, 10, 100)
+data = np.append(data, [150, 170, 200])  # Intentional outliers
+df = pd.DataFrame({'feature': data})
 
-f_oneway(male_age, female_age, other_age)  # ANOVA
-```
+# IQR Detection
+Q1, Q3 = df['feature'].quantile(0.25), df['feature'].quantile(0.75)
+IQR = Q3 - Q1
+lower, upper = Q1 - 1.5 * IQR, Q3 + 1.5 * IQR
 
-**Numerical Imputation Notebook:**
-```python
-data = {
-    "age": [25, 30, 35, np.nan, 45, 50, np.nan, 60, 65, 70],
-    "salary": [30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000]
-}
-df = pd.DataFrame(data)
-```
+# Capping
+df['capped_feature'] = np.clip(df['feature'], lower, upper)
 
-**Categorical Imputation Notebook:**
-```python
-data = {
-    'City': ['Pune', 'Mumbai', np.nan, 'Pune', 'Delhi', np.nan, 'Mumbai'],
-    'Loan_Status': ['Approved', 'Rejected', np.nan, 'Approved', 'Rejected', np.nan, 'Approved']
-}
-df = pd.DataFrame(data)
-```
+# Log Transform
+df['log_feature'] = np.log1p(df['feature'])
 
-**KNN & Iterative Imputer Notebook:**
-```python
-data = {
-    'age': [25, 30, np.nan, 28],
-    'salary': [20000, 25000, 24000, 23000]
-}
-df = pd.DataFrame(data)
-
-# KNN Imputer
-from sklearn.impute import KNNImputer
-imputer = KNNImputer(n_neighbors=2)
-df_imputed = imputer.fit_transform(df)
-
-# Iterative Imputer
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
-imputer_iter = IterativeImputer(max_iter=10, random_state=42)
-df_iter_imputed = imputer_iter.fit_transform(df)
+# Robust Scaling
+from sklearn.preprocessing import RobustScaler
+df['robust_scaled'] = RobustScaler().fit_transform(df[['feature']])
 ```
 
 ---
