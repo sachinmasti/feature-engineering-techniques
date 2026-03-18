@@ -23,6 +23,7 @@ This repository contains hands-on notebooks covering various feature engineering
 | `KNN_Iterative_Imputer_Guide.ipynb` | Advanced missing value imputation using KNN Imputer (distance-based) and Iterative Imputer (model-based / MICE) — covers when to use each, industry best practices, data leakage prevention, and Pipeline integration |
 | `Outlier_Handling_Master_Notebook.ipynb` | Complete outlier detection and treatment guide — IQR Method, Z-Score Method, Capping/Winsorization, Log Transformation, Robust Scaling, and model-based comparison (Linear Regression vs Random Forest) |
 | `Feature_Construction_Reference_Final.ipynb` | Practical feature construction techniques — Date features, Count-based features, Multi-value flags, Binary keyword flags, Aggregation features, and Interaction features — with Hinglish explanations and industry-style examples |
+| `Feature_Engineering_Hacks.ipynb` | 10 powerful feature engineering hacks — Target Encoding, Frequency Encoding, Binning, Lag Features, Rolling Window, Polynomial Features, Log Transformation, Ratio Features, Missing Indicators, and Text-Based Features — with Hinglish comments and a common sample dataset |
 
 ---
 
@@ -52,6 +53,16 @@ This repository contains hands-on notebooks covering various feature engineering
 - **Binary Keyword Flags** — Generating `is_drama`, `is_comedy` style features from high-cardinality categorical columns using `str.contains`
 - **Aggregation Features** — Adding group-level behavior (sum, mean, count) using `groupby` + `transform` for user/product/category-level signals
 - **Interaction Features** — Combining two features to create stronger signals (e.g., `age_duration`, `cast_per_duration`)
+- **Target Encoding** — Replacing each category with its mean target value; powerful for high-cardinality columns with tree-based models
+- **Frequency Encoding** — Replacing each category with its proportion in the dataset; leakage-safe alternative to target encoding
+- **Binning / Bucketing** — Converting continuous columns into groups using `pd.cut` (equal width) and `pd.qcut` (equal frequency) to reduce noise
+- **Lag Features** — Creating "N days ago" features from time-series data using `.shift()` to capture past behavior
+- **Rolling Window Features** — Computing sliding window statistics (mean, sum, std) using `.rolling()` to capture trends and volatility
+- **Polynomial Features** — Generating squared, cubed, and cross-product features using `PolynomialFeatures` to help linear models learn non-linear patterns
+- **Log Transformation** — Applying `np.log1p` to skewed columns like price and income to normalize distribution for linear models
+- **Ratio Features** — Dividing two related columns (e.g., `price / area`, `income / debt`) to create scale-independent signals
+- **Has / Missing Indicator** — Converting null or zero values into 0/1 binary flags to capture missingness as a meaningful signal
+- **Text-Based Features** — Extracting character length, word count, and keyword presence from raw text columns without full NLP
 
 ---
 
@@ -60,9 +71,9 @@ This repository contains hands-on notebooks covering various feature engineering
 - Label Encoding & One Hot Encoding
 - ~~Handling Missing Values (NaN)~~ *(Numerical, Categorical, KNN & Iterative imputation strategies fully covered)*
 - ~~Outlier Detection & Treatment~~ *(Fully covered in Outlier_Handling_Master_Notebook.ipynb)*
-- Binning & Bucketing
+- ~~Binning & Bucketing~~ *(Covered in Feature_Engineering_Hacks.ipynb)*
 - Feature Scaling (MinMaxScaler, StandardScaler)
-- ~~Creating New Features from Existing Ones~~ *(Covered in Feature_Construction_Reference_Final.ipynb)*
+- ~~Creating New Features from Existing Ones~~ *(Covered in Feature_Construction_Reference_Final.ipynb and Feature_Engineering_Hacks.ipynb)*
 - Mutual Information & Model-Based Feature Selection
 
 ---
@@ -101,6 +112,26 @@ When working with **categorical → numeric** relationships, two tests are commo
 | **Interaction Features** | Two features combined give better signal | `age_duration`, `cast_per_duration` |
 
 > ✅ Always ask: **"What signal does this feature give the model?"** — If no clear answer, skip it.
+
+---
+
+## 🔥 Feature Engineering Hacks – Quick Reference
+
+| Hack | Use When | Key Function |
+|---|---|---|
+| **Target Encoding** | High cardinality, tree-based models | `groupby().transform('mean')` |
+| **Frequency Encoding** | Category popularity is a signal | `value_counts(normalize=True)` |
+| **Binning (cut)** | Custom range grouping needed | `pd.cut()` |
+| **Binning (qcut)** | Equal-frequency groups needed | `pd.qcut()` |
+| **Lag Features** | Time-series, past behavior matters | `.shift(n)` |
+| **Rolling Window** | Trend or volatility capture | `.rolling(n).mean()` |
+| **Polynomial Features** | Linear model on non-linear data | `PolynomialFeatures(degree=2)` |
+| **Log Transformation** | Skewed data (price, income) | `np.log1p()` |
+| **Ratio Features** | Scale-independent comparison | `col_a / (col_b + 1)` |
+| **Has / Missing Indicator** | Missingness is meaningful | `.notna().astype(int)` |
+| **Text-Based Features** | Raw text columns present | `.str.len()`, `.str.contains()` |
+
+> ✅ Golden Rule — Always fit encodings on **train data only** and transform test data separately to avoid data leakage.
 
 ---
 
@@ -222,6 +253,36 @@ df['is_drama'] = df['listed_in'].str.contains('Drama', na=False).astype(int)
 # Interaction features
 df['age_duration'] = df['content_age'] * df['duration']
 df['cast_per_duration'] = df['num_cast'] / (df['duration'] + 1)
+```
+
+**Feature Engineering Hacks Notebook:**
+```python
+import numpy as np
+import pandas as pd
+
+np.random.seed(42)
+df = pd.DataFrame({
+    'age':    np.random.randint(18, 70, 200),
+    'income': np.random.randint(20000, 200000, 200),
+    'price':  np.random.randint(100, 10000, 200),
+    'area':   np.random.randint(500, 5000, 200),
+    'sales':  np.random.randint(50, 500, 200),
+    'city':   np.random.choice(['Mumbai', 'Delhi', 'Pune', 'Hyderabad', 'Bangalore'], 200),
+    'target': np.random.randint(0, 2, 200),
+    'date':   pd.date_range('2023-01-01', periods=200, freq='D')
+})
+
+# Target Encoding
+df['city_target_encoded'] = df.groupby('city')['target'].transform('mean')
+
+# Lag Features
+df['sales_lag_7day'] = df['sales'].shift(7)
+
+# Log Transformation
+df['log_price'] = np.log1p(df['price'])
+
+# Ratio Features
+df['price_per_sqft'] = df['price'] / (df['area'] + 1)
 ```
 
 **Outlier Handling Notebook:**
