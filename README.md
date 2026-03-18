@@ -22,6 +22,7 @@ This repository contains hands-on notebooks covering various feature engineering
 | `Categorical_Missing_Value_Handling.ipynb` | Categorical missing value imputation strategies — Most Frequent, Constant ('Missing' category), Random Imputation, and Missing Indicator — with concept explanation, use cases, and risks for each method |
 | `KNN_Iterative_Imputer_Guide.ipynb` | Advanced missing value imputation using KNN Imputer (distance-based) and Iterative Imputer (model-based / MICE) — covers when to use each, industry best practices, data leakage prevention, and Pipeline integration |
 | `Outlier_Handling_Master_Notebook.ipynb` | Complete outlier detection and treatment guide — IQR Method, Z-Score Method, Capping/Winsorization, Log Transformation, Robust Scaling, and model-based comparison (Linear Regression vs Random Forest) |
+| `Feature_Construction_Reference_Final.ipynb` | Practical feature construction techniques — Date features, Count-based features, Multi-value flags, Binary keyword flags, Aggregation features, and Interaction features — with Hinglish explanations and industry-style examples |
 
 ---
 
@@ -45,6 +46,12 @@ This repository contains hands-on notebooks covering various feature engineering
 - **KNN Imputer** — Distance-based imputation using K-nearest neighbors; fills missing values based on the most similar rows using Euclidean distance; includes scaling requirements and n_neighbors tuning
 - **Iterative Imputer (MICE)** — Model-based imputation using chained equations; treats each column with missing values as a regression target and predicts it using remaining features; supports custom estimators and multiple iterations for convergence
 - **Outlier Detection & Treatment** — End-to-end outlier handling pipeline covering IQR Method, Z-Score Method, Capping/Winsorization, Log Transformation, RobustScaler, and model-level robustness comparison between Linear Regression and Random Forest
+- **Date Feature Construction** — Breaking date columns into year, month, dayofweek, and is_weekend flags for time-based pattern modeling
+- **Count-Based Features** — Counting elements in comma-separated columns like cast, genres, tags using `str.split` + `apply(len)`
+- **Multi-Value Flags** — Creating binary flags from multi-value columns (e.g., `multi_country`) to reduce complexity
+- **Binary Keyword Flags** — Generating `is_drama`, `is_comedy` style features from high-cardinality categorical columns using `str.contains`
+- **Aggregation Features** — Adding group-level behavior (sum, mean, count) using `groupby` + `transform` for user/product/category-level signals
+- **Interaction Features** — Combining two features to create stronger signals (e.g., `age_duration`, `cast_per_duration`)
 
 ---
 
@@ -55,7 +62,7 @@ This repository contains hands-on notebooks covering various feature engineering
 - ~~Outlier Detection & Treatment~~ *(Fully covered in Outlier_Handling_Master_Notebook.ipynb)*
 - Binning & Bucketing
 - Feature Scaling (MinMaxScaler, StandardScaler)
-- Creating New Features from Existing Ones
+- ~~Creating New Features from Existing Ones~~ *(Covered in Feature_Construction_Reference_Final.ipynb)*
 - Mutual Information & Model-Based Feature Selection
 
 ---
@@ -79,6 +86,21 @@ When working with **categorical → numeric** relationships, two tests are commo
 | > 0.14 | Large effect |
 
 > ⚠️ In real ML workflows, use ANOVA and Eta Squared for **feature understanding**, not as a replacement for feature importance, mutual information, or model-based selection.
+
+---
+
+## 🔨 Feature Construction – Quick Reference
+
+| Technique | Use When | Example |
+|---|---|---|
+| **Date Feature Extraction** | Time-based patterns exist | `is_weekend`, `month`, `year` from date column |
+| **Count-Based Features** | Multi-value columns (comma-separated) | `num_cast`, `num_genres` from cast/genre columns |
+| **Multi-Value Flags** | Reduce complexity of list-type columns | `multi_country` = 1 if more than 1 country |
+| **Binary Keyword Flags** | High cardinality categorical columns | `is_drama`, `is_comedy` from listed_in column |
+| **Aggregation Features** | Group-level behavior needed | `user_total`, `user_avg` using `groupby + transform` |
+| **Interaction Features** | Two features combined give better signal | `age_duration`, `cast_per_duration` |
+
+> ✅ Always ask: **"What signal does this feature give the model?"** — If no clear answer, skip it.
 
 ---
 
@@ -186,6 +208,20 @@ data = {
     'order_id': [1, 2, 3, 4, 5],
     'order_date': ['2023-01-15', '2023-03-22', '2023-07-04', '2023-11-11', '2023-12-25']
 }
+```
+
+**Feature Construction Notebook:**
+```python
+# Count-based features
+df['num_cast'] = df['cast'].fillna('').str.split(',').apply(len)
+df['num_genres'] = df['listed_in'].fillna('').str.split(',').apply(len)
+
+# Binary keyword flags
+df['is_drama'] = df['listed_in'].str.contains('Drama', na=False).astype(int)
+
+# Interaction features
+df['age_duration'] = df['content_age'] * df['duration']
+df['cast_per_duration'] = df['num_cast'] / (df['duration'] + 1)
 ```
 
 **Outlier Handling Notebook:**
